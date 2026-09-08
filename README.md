@@ -75,9 +75,27 @@ packages/
   web/       React client — lobby, chat, reasoning inspector
 ```
 
+## Testing
+
+Tests are written **alongside each feature, phase by phase** — never deferred to the end. Every phase ships with the unit tests that cover its new logic, so `npm test` stays green as the game engine grows and regressions surface immediately.
+
+```bash
+npm test                        # runs every workspace's tests
+```
+
+Current coverage (14 tests):
+
+| Area | What's covered |
+|---|---|
+| `shared` — game rules | phase-transition guards, win-condition evaluation |
+| `shared` — role logic | balanced role deck, `<4` guard, deterministic seeded shuffle |
+| `server` — room registry | join/leave, chat recording, rejecting unknown players, broadcast to open-only sockets, empty-room cleanup |
+
+Pure game rules live in `shared` with **no I/O**, so they're tested in isolation without a server or database. As P1+ add the event store and state machine, their tests land in the same commit as the code.
+
 ## Roadmap
 
-- [x] **P0** — Monorepo, shared types, WS gateway + lobby/chat, DB schema + migration, CI, tests
+- [x] **P0** — Monorepo, shared types, WS gateway + lobby/chat, DB schema + migration, CI, unit tests (14)
 - [ ] **P1** — Event store + state machine; full human game loop (night → vote → resolve → win)
 - [ ] **P2** — Gemini agents take turns with persistent memory + reasoning stream
 - [ ] **P3** — Full multi-agent games, reasoning inspector UI, seer/doctor abilities
