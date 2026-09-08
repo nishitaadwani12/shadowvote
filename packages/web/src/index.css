@@ -124,3 +124,76 @@ li.dead {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+.error {
+  background: #3d0f16;
+  color: #f87171;
+  border: 1px solid #5b1a24;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.phasebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.phase {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.role {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #241d3d;
+  color: #b7a6ff;
+}
+
+.winner {
+  background: #0f3d2e;
+  color: #4ade80;
+  border-radius: 8px;
+  padding: 0.6rem;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #facc15;
+  margin: 0 0 0.75rem;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+}
+.pick {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+}
+
+.notes {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+.notes h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.notes p {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+}

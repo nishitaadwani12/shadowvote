@@ -1,12 +1,39 @@
 import { useState } from 'react';
+import type { NightAction, Role } from '@shadowvote/shared';
 import { useGameSocket } from './lib/ws';
 
+const NIGHT_ACTION: Partial<Record<Role, NightAction>> = {
+  WEREWOLF: 'KILL',
+  DOCTOR: 'PROTECT',
+  SEER: 'INSPECT',
+};
+
+const ACTION_VERB: Record<NightAction, string> = { KILL: 'kill', PROTECT: 'protect', INSPECT: 'inspect' };
+
 export function App() {
-  const { status, state, chat, reasoning, playerId, join, sendChat } = useGameSocket();
+  const { status, state, chat, reasoning, playerId, error, join, sendChat, start, vote, nightAction } = useGameSocket();
   const [gameId, setGameId] = useState('table-1');
   const [name, setName] = useState('');
   const [draft, setDraft] = useState('');
   const joined = playerId !== null;
+
+  const you = state?.you ?? null;
+  const phase = state?.phase ?? 'LOBBY';
+  const myNightAction = you?.role ? NIGHT_ACTION[you.role] : undefined;
+  const canActAtNight = phase === 'NIGHT' && you?.alive && myNightAction;
+  const canVote = (phase === 'DAY_DISCUSSION' || phase === 'DAY_VOTE') && you?.alive;
+
+  function pickPlayer(targetId: string) {
+    if (canActAtNight && myNightAction) nightAction(myNightAction, targetId);
+    else if (canVote) vote(targetId);
+  }
+
+  const targetable = Boolean(canActAtNight || canVote);
+  const actionHint = canActAtNight
+    ? `Night — click a player to ${ACTION_VERB[myNightAction!]}`
+    : canVote
+      ? 'Day — click a player to vote them out'
+      : null;
 
   return (
     <div className="app">
@@ -14,6 +41,8 @@ export function App() {
         <h1>🐺 ShadowVote</h1>
         <span className={`status status--${status}`}>{status}</span>
       </header>
+
+      {error && <div className="error">{error}</div>}
 
       {!joined ? (
         <form
@@ -32,14 +61,45 @@ export function App() {
       ) : (
         <main className="game">
           <section className="players">
-            <h2>Players — {state?.phase ?? 'LOBBY'}</h2>
+            <div className="phasebar">
+              <span className="phase">{phase}</span>
+              {state && state.round > 0 && <span className="muted">round {state.round}</span>}
+              {you?.role && <span className="role">you are {you.role}</span>}
+            </div>
+
+            {state?.winner ? (
+              <div className="winner">🏆 {state.winner} wins</div>
+            ) : phase === 'LOBBY' ? (
+              <button onClick={start} disabled={(state?.players.length ?? 0) < 4}>
+                Start game ({state?.players.length ?? 0}/4+)
+              </button>
+            ) : (
+              actionHint && <p className="hint">{actionHint}</p>
+            )}
+
             <ul>
               {state?.players.map((p) => (
                 <li key={p.id} className={p.alive ? '' : 'dead'}>
-                  {p.name} {p.id === playerId ? '(you)' : ''} {p.isAi ? '🤖' : ''}
+                  <span>
+                    {p.name} {p.id === playerId ? '(you)' : ''} {p.isAi ? '🤖' : ''}
+                  </span>
+                  {targetable && p.alive && p.id !== playerId && (
+                    <button className="pick" onClick={() => pickPlayer(p.id)}>
+                      {canActAtNight ? ACTION_VERB[myNightAction!] : 'vote'}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
+
+            {(state?.notes.length ?? 0) > 0 && (
+              <div className="notes">
+                <h3>Private notes</h3>
+                {state?.notes.map((n, i) => (
+                  <p key={i}>{n}</p>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="chat">

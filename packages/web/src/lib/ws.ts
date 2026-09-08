@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChatLine, ClientMessage, GameStateView, ServerMessage } from '@shadowvote/shared';
+import type { ChatLine, ClientMessage, GameStateView, NightAction, ServerMessage } from '@shadowvote/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws';
 
@@ -22,6 +22,7 @@ export function useGameSocket() {
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [reasoning, setReasoning] = useState<ReasoningEntry[]>([]);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null);
   const gameRef = useRef<string | null>(null);
@@ -47,6 +48,9 @@ export function useGameSocket() {
         case 'AGENT_REASONING':
           setReasoning((prev) => [...prev, msg]);
           break;
+        case 'ERROR':
+          setError(msg.message);
+          break;
         default:
           break;
       }
@@ -67,12 +71,23 @@ export function useGameSocket() {
     [sendRaw],
   );
 
-  const sendChat = useCallback(
-    (text: string) => {
-      if (gameRef.current) sendRaw({ t: 'CHAT', gameId: gameRef.current, text });
+  const withGame = useCallback(
+    (make: (gameId: string) => ClientMessage) => {
+      if (gameRef.current) {
+        setError(null);
+        sendRaw(make(gameRef.current));
+      }
     },
     [sendRaw],
   );
 
-  return { status, state, chat, reasoning, playerId, join, sendChat };
+  const sendChat = useCallback((text: string) => withGame((gameId) => ({ t: 'CHAT', gameId, text })), [withGame]);
+  const start = useCallback(() => withGame((gameId) => ({ t: 'START', gameId })), [withGame]);
+  const vote = useCallback((targetId: string) => withGame((gameId) => ({ t: 'VOTE', gameId, targetId })), [withGame]);
+  const nightAction = useCallback(
+    (action: NightAction, targetId: string) => withGame((gameId) => ({ t: 'NIGHT_ACTION', gameId, action, targetId })),
+    [withGame],
+  );
+
+  return { status, state, chat, reasoning, playerId, error, join, sendChat, start, vote, nightAction };
 }
