@@ -83,7 +83,7 @@ Tests are written **alongside each feature, phase by phase** — never deferred 
 npm test                        # runs every workspace's tests
 ```
 
-Current coverage (35 tests):
+Current coverage (37 tests):
 
 | Area | What's covered |
 |---|---|
@@ -94,7 +94,8 @@ Current coverage (35 tests):
 | `server` — engine | command routing, role dealing, chat recording, invalid-command errors |
 | `server` — connections | attach/detach, socket lookup, empty-game cleanup |
 | `server` — orchestrator | **all-AI game plays itself to a winner**, lobby/game-over no-ops, reasoning + memory recorded |
-| `server` — heuristic agent | targets first candidate, speaks only in discussion, abstains with no targets |
+| `server` — heuristic agent | targets first candidate, speaks only in discussion, abstains with no targets, never targets an ally |
+| `shared` — werewolf allies | `viewFor` reveals the pack to werewolves, hides it from villagers |
 
 Pure game rules live in `shared` with **no I/O**, so they're tested in isolation without a server or database. As P1+ add the event store and state machine, their tests land in the same commit as the code.
 
@@ -103,7 +104,7 @@ Pure game rules live in `shared` with **no I/O**, so they're tested in isolation
 - [x] **P0** — Monorepo, shared types, WS gateway + lobby/chat, DB schema + migration, CI, unit tests
 - [x] **P1** — Event-sourced engine + state machine; full human game loop (start → night → vote → resolve → win) playable in the UI
 - [x] **P2** — AI players (Gemini, with heuristic fallback) take turns off the request path with persistent memory; reasoning streamed to the inspector; add AI players from the lobby
-- [ ] **P3** — Full multi-agent games, reasoning inspector UI, seer/doctor abilities
+- [x] **P3** — Faction-aware agents (werewolf pack coordination) + role-strategy prompting; role objectives, night/spectator status, and a round-grouped reasoning inspector in the UI
 - [ ] **P4** — Reconnect/resync hardening, replay/debug view, integration tests, deploy
 
 ## License
