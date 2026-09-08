@@ -74,7 +74,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
         ...state,
         players: [
           ...state.players,
-          { id: event.playerId, name: event.name, isAi: event.isAi, persona: null, role: null, alive: true },
+          { id: event.playerId, name: event.name, isAi: event.isAi, persona: event.persona ?? null, role: null, alive: true },
         ],
       };
 

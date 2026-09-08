@@ -90,7 +90,7 @@ export interface ChatLine {
 
 export type GameEvent =
   | { type: 'GAME_CREATED'; gameId: string; seed: string }
-  | { type: 'PLAYER_JOINED'; playerId: string; name: string; isAi: boolean }
+  | { type: 'PLAYER_JOINED'; playerId: string; name: string; isAi: boolean; persona?: string }
   | { type: 'GAME_STARTED'; roles: Record<string, Role> }
   | { type: 'PHASE_CHANGED'; phase: Phase; round: number }
   | { type: 'CHAT'; playerId: string; text: string; round: number }
@@ -107,6 +107,7 @@ export type NightAction = 'KILL' | 'INSPECT' | 'PROTECT';
 
 export type ClientMessage =
   | { t: 'JOIN'; gameId: string; name: string }
+  | { t: 'ADD_AI'; gameId: string; name: string; persona?: string }
   | { t: 'START'; gameId: string }
   | { t: 'CHAT'; gameId: string; text: string }
   | { t: 'NIGHT_ACTION'; gameId: string; action: NightAction; targetId: string }
