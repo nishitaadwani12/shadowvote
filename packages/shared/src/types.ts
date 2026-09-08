@@ -107,6 +107,7 @@ export type NightAction = 'KILL' | 'INSPECT' | 'PROTECT';
 
 export type ClientMessage =
   | { t: 'JOIN'; gameId: string; name: string }
+  | { t: 'REJOIN'; gameId: string; playerId: string }
   | { t: 'ADD_AI'; gameId: string; name: string; persona?: string }
   | { t: 'START'; gameId: string }
   | { t: 'CHAT'; gameId: string; text: string }
