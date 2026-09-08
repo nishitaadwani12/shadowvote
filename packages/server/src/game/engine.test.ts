@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { InMemoryEventStore } from '../db/event-store';
 import { GameEngine } from './engine';
 
 function seat(engine: GameEngine, gameId: string, names: string[]): string[] {
@@ -37,4 +38,19 @@ test('invalid commands throw with a message', () => {
   const [p1] = seat(engine, 'g', ['A', 'B']);
   assert.throws(() => engine.apply('g', p1!, { t: 'START', gameId: 'g' }), /at least 4 players/);
   assert.throws(() => engine.apply('missing', 'x', { t: 'START', gameId: 'missing' }), /No such game/);
+});
+
+test('a restarted engine hydrates games from the event store (crash recovery)', async () => {
+  const store = new InMemoryEventStore();
+  const first = new GameEngine(store);
+  const ids = seat(first, 'g', ['A', 'B', 'C', 'D']);
+  first.apply('g', ids[0]!, { t: 'START', gameId: 'g' });
+  first.apply('g', ids[0]!, { t: 'CHAT', gameId: 'g', text: 'good luck' });
+  const before = first.state('g');
+
+  // Simulate a process restart: brand-new engine, same durable store.
+  const restarted = new GameEngine(store);
+  const restored = await restarted.hydrate();
+  assert.equal(restored, 1);
+  assert.deepEqual(restarted.state('g'), before);
 });

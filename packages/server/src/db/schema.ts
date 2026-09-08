@@ -18,7 +18,8 @@ import {
  */
 
 export const games = pgTable('games', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  // The room id (a human-friendly string like "table-1"), not a UUID.
+  id: text('id').primaryKey(),
   phase: text('phase').notNull().default('LOBBY'),
   round: integer('round').notNull().default(0),
   seed: text('seed').notNull(),
@@ -31,7 +32,7 @@ export const players = pgTable(
   'players',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    gameId: uuid('game_id')
+    gameId: text('game_id')
       .notNull()
       .references(() => games.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
@@ -47,7 +48,7 @@ export const events = pgTable(
   'events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    gameId: uuid('game_id')
+    gameId: text('game_id')
       .notNull()
       .references(() => games.id, { onDelete: 'cascade' }),
     seq: integer('seq').notNull(),
@@ -65,7 +66,7 @@ export const agentMemories = pgTable(
   'agent_memories',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    gameId: uuid('game_id')
+    gameId: text('game_id')
       .notNull()
       .references(() => games.id, { onDelete: 'cascade' }),
     playerId: uuid('player_id')
@@ -82,7 +83,7 @@ export const votes = pgTable(
   'votes',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    gameId: uuid('game_id')
+    gameId: text('game_id')
       .notNull()
       .references(() => games.id, { onDelete: 'cascade' }),
     round: integer('round').notNull(),

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS "agent_memories" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"game_id" uuid NOT NULL,
+	"game_id" text NOT NULL,
 	"player_id" uuid NOT NULL,
 	"round" integer NOT NULL,
 	"content" text NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS "agent_memories" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"game_id" uuid NOT NULL,
+	"game_id" text NOT NULL,
 	"seq" integer NOT NULL,
 	"type" text NOT NULL,
 	"payload" jsonb NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS "events" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "games" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"phase" text DEFAULT 'LOBBY' NOT NULL,
 	"round" integer DEFAULT 0 NOT NULL,
 	"seed" text NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS "games" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "players" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"game_id" uuid NOT NULL,
+	"game_id" text NOT NULL,
 	"name" text NOT NULL,
 	"role" text,
 	"is_ai" boolean DEFAULT false NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS "players" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "votes" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"game_id" uuid NOT NULL,
+	"game_id" text NOT NULL,
 	"round" integer NOT NULL,
 	"voter_id" uuid NOT NULL,
 	"target_id" uuid NOT NULL

@@ -1,5 +1,5 @@
 {
-  "id": "f1e734a2-bf4d-4a49-8e24-a17ab7bf8c03",
+  "id": "4478015d-f435-4659-884d-f0a48e54dd4e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -17,7 +17,7 @@
         },
         "game_id": {
           "name": "game_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -108,7 +108,7 @@
         },
         "game_id": {
           "name": "game_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -185,10 +185,9 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "phase": {
           "name": "phase",
@@ -249,7 +248,7 @@
         },
         "game_id": {
           "name": "game_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -334,7 +333,7 @@
         },
         "game_id": {
           "name": "game_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
