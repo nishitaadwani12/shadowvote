@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatLine, ClientMessage, GameStateView, NightAction, ServerMessage } from '@shadowvote/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws';
+const SESSION_KEY = 'shadowvote-session';
 
 export type Status = 'connecting' | 'open' | 'closed';
 
@@ -30,13 +31,30 @@ export function useGameSocket() {
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
     socketRef.current = ws;
-    ws.onopen = () => setStatus('open');
+    ws.onopen = () => {
+      setStatus('open');
+      // Auto-reconnect to a prior seat if we have one.
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) {
+        try {
+          const { gameId, playerId } = JSON.parse(raw) as { gameId: string; playerId: string };
+          if (gameId && playerId) {
+            gameRef.current = gameId;
+            ws.send(JSON.stringify({ t: 'REJOIN', gameId, playerId }));
+          }
+        } catch {
+          localStorage.removeItem(SESSION_KEY);
+        }
+      }
+    };
     ws.onclose = () => setStatus('closed');
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data as string) as ServerMessage;
       switch (msg.t) {
         case 'JOINED':
           setPlayerId(msg.playerId);
+          gameRef.current = msg.gameId;
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ gameId: msg.gameId, playerId: msg.playerId }));
           break;
         case 'STATE':
           setState(msg.state);
@@ -50,6 +68,7 @@ export function useGameSocket() {
           break;
         case 'ERROR':
           setError(msg.message);
+          if (/Session expired/.test(msg.message)) localStorage.removeItem(SESSION_KEY);
           break;
         default:
           break;
