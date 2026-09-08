@@ -1,0 +1,24 @@
+{
+  "name": "shadowvote",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A social-deduction game where you play alongside LLM agents that reason, remember, and deceive.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @shadowvote/server",
+    "dev:web": "npm run dev -w @shadowvote/web",
+    "start": "npm run start -w @shadowvote/server",
+    "build": "npm run build -w @shadowvote/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run db:generate -w @shadowvote/server",
+    "db:migrate": "npm run db:migrate -w @shadowvote/server"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
