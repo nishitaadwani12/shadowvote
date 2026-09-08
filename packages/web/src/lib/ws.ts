@@ -83,11 +83,15 @@ export function useGameSocket() {
 
   const sendChat = useCallback((text: string) => withGame((gameId) => ({ t: 'CHAT', gameId, text })), [withGame]);
   const start = useCallback(() => withGame((gameId) => ({ t: 'START', gameId })), [withGame]);
+  const addAi = useCallback(
+    (name: string, persona: string) => withGame((gameId) => ({ t: 'ADD_AI', gameId, name, persona })),
+    [withGame],
+  );
   const vote = useCallback((targetId: string) => withGame((gameId) => ({ t: 'VOTE', gameId, targetId })), [withGame]);
   const nightAction = useCallback(
     (action: NightAction, targetId: string) => withGame((gameId) => ({ t: 'NIGHT_ACTION', gameId, action, targetId })),
     [withGame],
   );
 
-  return { status, state, chat, reasoning, playerId, error, join, sendChat, start, vote, nightAction };
+  return { status, state, chat, reasoning, playerId, error, join, sendChat, start, addAi, vote, nightAction };
 }

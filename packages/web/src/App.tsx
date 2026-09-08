@@ -10,8 +10,11 @@ const NIGHT_ACTION: Partial<Record<Role, NightAction>> = {
 
 const ACTION_VERB: Record<NightAction, string> = { KILL: 'kill', PROTECT: 'protect', INSPECT: 'inspect' };
 
+const PERSONAS = ['a cautious analyst', 'an aggressive accuser', 'a quiet observer', 'a smooth-talking bluffer'];
+
 export function App() {
-  const { status, state, chat, reasoning, playerId, error, join, sendChat, start, vote, nightAction } = useGameSocket();
+  const { status, state, chat, reasoning, playerId, error, join, sendChat, start, addAi, vote, nightAction } =
+    useGameSocket();
   const [gameId, setGameId] = useState('table-1');
   const [name, setName] = useState('');
   const [draft, setDraft] = useState('');
@@ -26,6 +29,12 @@ export function App() {
   function pickPlayer(targetId: string) {
     if (canActAtNight && myNightAction) nightAction(myNightAction, targetId);
     else if (canVote) vote(targetId);
+  }
+
+  function addAiPlayer() {
+    const n = (state?.players.filter((p) => p.isAi).length ?? 0) + 1;
+    const persona = PERSONAS[Math.floor(Math.random() * PERSONAS.length)]!;
+    addAi(`AI-${n}`, persona);
   }
 
   const targetable = Boolean(canActAtNight || canVote);
@@ -70,9 +79,14 @@ export function App() {
             {state?.winner ? (
               <div className="winner">🏆 {state.winner} wins</div>
             ) : phase === 'LOBBY' ? (
-              <button onClick={start} disabled={(state?.players.length ?? 0) < 4}>
-                Start game ({state?.players.length ?? 0}/4+)
-              </button>
+              <div className="lobby-actions">
+                <button className="secondary" onClick={addAiPlayer}>
+                  + Add AI player
+                </button>
+                <button onClick={start} disabled={(state?.players.length ?? 0) < 4}>
+                  Start game ({state?.players.length ?? 0}/4+)
+                </button>
+              </div>
             ) : (
               actionHint && <p className="hint">{actionHint}</p>
             )}
@@ -128,7 +142,7 @@ export function App() {
           <aside className="reasoning">
             <h2>🧠 AI reasoning</h2>
             {reasoning.length === 0 ? (
-              <p className="muted">Hidden agent reasoning appears here once AI players join (P2).</p>
+              <p className="muted">Add AI players and start — each agent's hidden reasoning streams here as it acts.</p>
             ) : (
               reasoning.map((r, i) => (
                 <p key={i}>
