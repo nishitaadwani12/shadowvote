@@ -70,6 +70,8 @@ export interface GameStateView {
   players: PlayerPublic[];
   /** Present only for the requesting player. */
   you: PlayerPrivate | null;
+  /** Private information only this player may see (e.g. seer inspection results). */
+  notes: string[];
   transcript: ChatLine[];
   winner: Faction | null;
 }
