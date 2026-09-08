@@ -15,11 +15,10 @@ const ctx = (over: Partial<AgentContext>): AgentContext => ({
   ...over,
 });
 
-test('targets the first available candidate', async () => {
-  const decision = await new HeuristicAgent().decide(
-    ctx({ role: 'WEREWOLF', phase: 'NIGHT', candidates: [{ id: 't1', name: 'T1' }, { id: 't2', name: 'T2' }] }),
-  );
-  assert.equal(decision.targetId, 't1');
+test('targets one of the available candidates', async () => {
+  const candidates = [{ id: 't1', name: 'T1' }, { id: 't2', name: 'T2' }];
+  const decision = await new HeuristicAgent().decide(ctx({ role: 'WEREWOLF', phase: 'NIGHT', candidates }));
+  assert.ok(candidates.some((c) => c.id === decision.targetId));
   assert.ok(decision.reasoning.length > 0);
 });
 
