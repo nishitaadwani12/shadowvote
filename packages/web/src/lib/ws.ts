@@ -114,3 +114,5 @@ export function useGameSocket() {
 
   return { status, state, chat, reasoning, playerId, error, join, sendChat, start, addAi, vote, nightAction };
 }
+
+export type GameSocket = ReturnType<typeof useGameSocket>;
