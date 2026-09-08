@@ -51,6 +51,14 @@ export class GameEngine {
     return playerId;
   }
 
+  addAi(gameId: string, name: string, persona?: string): string {
+    const game = this.ensure(gameId);
+    if (game.state.started) throw new Error('Cannot add players after the game has started.');
+    const playerId = randomUUID();
+    this.commit(game, [{ type: 'PLAYER_JOINED', playerId, name, isAi: true, persona }]);
+    return playerId;
+  }
+
   /** Apply a gameplay command. Throws on invalid input; the caller surfaces the message. */
   apply(gameId: string, playerId: string, msg: ClientMessage): void {
     const game = this.games.get(gameId);
