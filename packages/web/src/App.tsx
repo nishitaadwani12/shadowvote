@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { NightAction, Role } from '@shadowvote/shared';
 import { useGameSocket } from './lib/ws';
 import { GameScene } from './scene/GameScene';
@@ -22,6 +23,13 @@ const PERSONAS = ['a cautious analyst', 'an aggressive accuser', 'a quiet observ
 export function App() {
   const sock = useGameSocket();
   const { state, playerId } = sock;
+  const [room, setRoom] = useState('table-1');
+
+  // Finished games are terminal on the server, so a rematch uses a fresh room.
+  const playAgain = () => {
+    sock.reset();
+    setRoom(`table-${Math.floor(1000 + Math.random() * 9000)}`);
+  };
 
   const you = state?.you ?? null;
   const phase = state?.phase ?? 'LOBBY';
@@ -64,6 +72,9 @@ export function App() {
         actionHint={actionHint}
         objective={you?.role ? ROLE_OBJECTIVE[you.role] : null}
         personas={PERSONAS}
+        room={room}
+        setRoom={setRoom}
+        onPlayAgain={playAgain}
       />
     </div>
   );

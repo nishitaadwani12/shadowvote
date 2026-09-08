@@ -10,6 +10,9 @@ interface Props {
   actionHint: string | null;
   objective: string | null;
   personas: string[];
+  room: string;
+  setRoom: (room: string) => void;
+  onPlayAgain: () => void;
 }
 
 const PHASE_LABEL: Record<string, string> = {
@@ -27,9 +30,8 @@ function groupByRound(entries: ReasoningEntry[]): [number, ReasoningEntry[]][] {
   return [...byRound.entries()].sort((a, b) => b[0] - a[0]);
 }
 
-export function Hud({ sock, you, phase, actionHint, objective, personas }: Props) {
+export function Hud({ sock, you, phase, actionHint, objective, personas, room, setRoom, onPlayAgain }: Props) {
   const { status, state, chat, reasoning, error, playerId, join, addAi, start, sendChat } = sock;
-  const [room, setRoom] = useState('table-1');
   const [name, setName] = useState('');
   const [draft, setDraft] = useState('');
   const joined = playerId !== null;
@@ -109,12 +111,13 @@ export function Hud({ sock, you, phase, actionHint, objective, personas }: Props
               {state?.winner ? (
                 <motion.div
                   key="winner"
-                  className="winner-banner"
+                  className="winner-stack"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ type: 'spring', stiffness: 200, damping: 18 }}
                 >
-                  🏆 {state.winner} wins
+                  <div className="winner-banner">🏆 {state.winner} wins</div>
+                  <button onClick={onPlayAgain}>Play again</button>
                 </motion.div>
               ) : phase === 'LOBBY' ? (
                 <motion.div key="controls" className="controls" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

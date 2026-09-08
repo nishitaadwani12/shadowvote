@@ -238,6 +238,12 @@ button.secondary {
   font-size: 0.9rem;
   color: #fde68a;
 }
+.winner-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
 .winner-banner {
   padding: 0.9rem 2rem;
   border-radius: 16px;

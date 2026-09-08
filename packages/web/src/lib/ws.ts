@@ -24,6 +24,7 @@ export function useGameSocket() {
   const [reasoning, setReasoning] = useState<ReasoningEntry[]>([]);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
 
   const socketRef = useRef<WebSocket | null>(null);
   const gameRef = useRef<string | null>(null);
@@ -75,7 +76,7 @@ export function useGameSocket() {
       }
     };
     return () => ws.close();
-  }, []);
+  }, [nonce]);
 
   const sendRaw = useCallback((message: ClientMessage) => {
     const ws = socketRef.current;
@@ -112,7 +113,19 @@ export function useGameSocket() {
     [withGame],
   );
 
-  return { status, state, chat, reasoning, playerId, error, join, sendChat, start, addAi, vote, nightAction };
+  /** Leave the current (usually finished) game and return to a clean lobby. */
+  const reset = useCallback(() => {
+    localStorage.removeItem(SESSION_KEY);
+    gameRef.current = null;
+    setPlayerId(null);
+    setState(null);
+    setChat([]);
+    setReasoning([]);
+    setError(null);
+    setNonce((n) => n + 1); // tear down + reopen the socket as a fresh client
+  }, []);
+
+  return { status, state, chat, reasoning, playerId, error, join, sendChat, start, addAi, vote, nightAction, reset };
 }
 
 export type GameSocket = ReturnType<typeof useGameSocket>;
