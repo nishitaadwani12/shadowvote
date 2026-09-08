@@ -49,6 +49,17 @@ test("viewFor surfaces the seer's inspection results as private notes", () => {
   assert.equal(viewFor(s, 'v1').notes.length, 0);
 });
 
+test('viewFor tells a werewolf who their allies are', () => {
+  const s = startedGame({ w1: 'WEREWOLF', w2: 'WEREWOLF', v1: 'VILLAGER', v2: 'VILLAGER' });
+  const note = viewFor(s, 'w1').notes.find((n) => n.includes('allies'));
+  assert.ok(note?.includes('w2'), 'w1 sees w2 as an ally');
+  // A villager gets no werewolf ally note.
+  assert.equal(
+    viewFor(s, 'v1').notes.some((n) => n.includes('allies')),
+    false,
+  );
+});
+
 test('viewFor returns no private identity before the game starts', () => {
   const s = applyEvents(initialState('g', 'seed'), [
     { type: 'PLAYER_JOINED', playerId: 'a', name: 'A', isAi: false },

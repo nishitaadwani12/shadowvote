@@ -172,6 +172,11 @@ export function viewFor(state: GameState, playerId: string): GameStateView {
       }
     }
   }
+  if (me?.role === 'WEREWOLF') {
+    // Werewolves know their pack — surface allies so they can coordinate.
+    const pack = state.players.filter((p) => p.role === 'WEREWOLF' && p.id !== playerId).map((p) => p.name);
+    notes.push(pack.length ? `Your werewolf allies: ${pack.join(', ')}.` : 'You are the lone werewolf.');
+  }
   return {
     gameId: state.gameId,
     phase: state.phase,
