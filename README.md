@@ -16,7 +16,8 @@
 - **Event-sourced game state.** Every action is an immutable event; the authoritative game state is a fold over an append-only log. Kill the server mid-game, restart, and the game **replays to exactly where it was**.
 - **Explicit state machine.** Phases (`LOBBY → NIGHT → DAY_DISCUSSION → DAY_VOTE → RESOLVE → …`) with guarded transitions — no ad-hoc mutation.
 - **Real-time & concurrent.** WebSocket gateway with room fan-out, reconnection/resync, and race-safe vote resolution.
-- **The reasoning inspector.** A toggle reveals each agent's hidden reasoning next to what it said out loud — the demo moment.
+- **The reasoning inspector.** Each agent's hidden reasoning streams into a live panel next to what it said out loud — the demo moment.
+- **Cinematic 3D table.** Players are seated in a ring around a WebGL table with day/night lighting that shifts by phase, an orbit-able camera, and glowing click-to-target tokens (react-three-fiber + Framer Motion).
 
 ## Architecture
 
@@ -41,7 +42,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the deep design.
 
 | Layer | Choice | Hosting |
 |---|---|---|
-| Frontend | React + TypeScript + Vite | Vercel (free) |
+| Frontend | React + TS + Vite, **react-three-fiber (3D)** + Framer Motion | Vercel (free) |
 | Backend | Node + Fastify + `ws` | Fly.io / Render (free) |
 | DB / ORM | Postgres + Drizzle (event store) | Neon (free) |
 | AI | Google Gemini `gemini-2.0-flash` | Gemini API free tier |
