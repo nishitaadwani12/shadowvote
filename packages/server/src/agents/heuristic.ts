@@ -7,7 +7,9 @@ import type { Agent, AgentContext, AgentDecision } from './agent';
  */
 export class HeuristicAgent implements Agent {
   async decide(ctx: AgentContext): Promise<AgentDecision> {
-    const target = ctx.candidates[0] ?? null;
+    // Never target a known ally (fellow werewolf); otherwise take the first candidate.
+    const pool = ctx.candidates.filter((c) => !ctx.allies.some((a) => a.id === c.id));
+    const target = pool[0] ?? ctx.candidates[0] ?? null;
     const targetName = target?.name ?? 'no one';
     const reasoning =
       `As the ${ctx.role} in round ${ctx.round}, with little hard evidence I keep pressure on ${targetName}.`;

@@ -11,6 +11,7 @@ const ctx = (over: Partial<AgentContext>): AgentContext => ({
   transcript: '',
   memories: [],
   candidates: [],
+  allies: [],
   ...over,
 });
 
@@ -32,4 +33,16 @@ test('speaks during discussion, stays quiet otherwise', async () => {
 test('abstains when there are no candidates', async () => {
   const decision = await new HeuristicAgent().decide(ctx({ candidates: [] }));
   assert.equal(decision.targetId, null);
+});
+
+test('a werewolf never targets a known ally', async () => {
+  const decision = await new HeuristicAgent().decide(
+    ctx({
+      role: 'WEREWOLF',
+      phase: 'NIGHT',
+      candidates: [{ id: 'ally', name: 'Ally' }, { id: 'victim', name: 'Victim' }],
+      allies: [{ id: 'ally', name: 'Ally' }],
+    }),
+  );
+  assert.equal(decision.targetId, 'victim');
 });

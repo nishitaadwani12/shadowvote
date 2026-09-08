@@ -100,9 +100,12 @@ export class AgentOrchestrator {
   }
 
   private buildContext(gameId: string, state: GameState, player: EnginePlayer): AgentContext {
-    const candidates = livingPlayers(state)
-      .filter((p) => p.id !== player.id)
-      .map((p) => ({ id: p.id, name: p.name }));
+    const living = livingPlayers(state);
+    const candidates = living.filter((p) => p.id !== player.id).map((p) => ({ id: p.id, name: p.name }));
+    const allies =
+      player.role === 'WEREWOLF'
+        ? living.filter((p) => p.role === 'WEREWOLF' && p.id !== player.id).map((p) => ({ id: p.id, name: p.name }))
+        : [];
     const transcript = state.transcript
       .slice(-20)
       .map((l) => `${l.name}: ${l.text}`)
@@ -115,6 +118,7 @@ export class AgentOrchestrator {
       transcript,
       memories: this.memory.recall(gameId, player.id),
       candidates,
+      allies,
       nightAction: player.role ? ROLE_ACTION[player.role] : undefined,
     };
   }

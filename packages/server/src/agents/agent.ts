@@ -2,6 +2,18 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import type { NightAction, Role } from '@shadowvote/shared';
 import { env } from '../env';
 
+/** Role-specific strategy injected into the prompt so agents play their part well. */
+const ROLE_GUIDANCE: Record<Role, string> = {
+  WEREWOLF:
+    'You are a werewolf. At night you and your allies kill a villager. By day, blend in: deflect suspicion, cast doubt on innocents, and never reveal your pack. You win when werewolves equal the villagers.',
+  SEER:
+    'You are the seer. Each night you learn one player\'s true alignment. Use your knowledge to steer the village, but reveal yourself carefully — outing yourself makes you the wolves\' next target.',
+  DOCTOR:
+    'You are the doctor. Each night you protect one player from the wolves. Read the table to guess who they\'ll strike; you may protect yourself sparingly.',
+  VILLAGER:
+    'You are a villager with no special power. Your weapons are logic and persuasion: track claims, spot contradictions, and rally votes against the likeliest wolves.',
+};
+
 /** The structured decision an AI player returns on its turn. */
 export interface AgentDecision {
   /** What the agent says out loud to the table. */
@@ -23,6 +35,8 @@ export interface AgentContext {
   memories: string[];
   /** Candidate player ids the agent may target this turn. */
   candidates: { id: string; name: string }[];
+  /** Known allies (fellow werewolves) — empty for village roles. */
+  allies: { id: string; name: string }[];
   nightAction?: NightAction;
 }
 
@@ -70,15 +84,25 @@ export class GeminiAgent implements Agent {
 
 function buildPrompt(ctx: AgentContext): string {
   const roster = ctx.candidates.map((c) => `- ${c.name} (id: ${c.id})`).join('\n');
+  const task =
+    ctx.phase === 'DAY_DISCUSSION'
+      ? 'It is the day discussion. Speak to the table to shape opinion; targetId may be who you lean toward voting.'
+      : ctx.phase === 'DAY_VOTE'
+        ? 'It is the vote. Choose the player you want eliminated (targetId).'
+        : `It is night. As the ${ctx.role}, choose who to ${(ctx.nightAction ?? 'ACT').toLowerCase()} (targetId).`;
+
   return [
-    `You are playing Werewolf. Your secret role is ${ctx.role}.`,
-    `Persona: ${ctx.persona}`,
+    `You are playing the social-deduction game Werewolf. Your secret role is ${ctx.role}.`,
+    ROLE_GUIDANCE[ctx.role],
+    `Your persona (stay in character): ${ctx.persona}.`,
+    ctx.allies.length ? `Your fellow werewolves are: ${ctx.allies.map((a) => a.name).join(', ')}. Never betray them.` : '',
     `Phase: ${ctx.phase}, round ${ctx.round}.`,
-    ctx.memories.length ? `Your private notes:\n${ctx.memories.join('\n')}` : '',
-    `Public conversation so far:\n${ctx.transcript || '(nothing yet)'}`,
-    `Players you may target (use their id, or empty string to abstain):\n${roster}`,
-    'Respond with speech (what you say aloud), reasoning (your hidden strategy),',
-    'and targetId (who you act on). Stay in character and play to win for your faction.',
+    ctx.memories.length ? `Your private notes from earlier rounds:\n${ctx.memories.join('\n')}` : '',
+    `Public conversation so far:\n${ctx.transcript || '(nothing said yet)'}`,
+    `Players you may target (use their exact id, or "" to abstain):\n${roster}`,
+    task,
+    'Reply as JSON with: speech (one or two natural sentences you say aloud; empty at night),',
+    'reasoning (your private strategy — this is never shown to opponents), and targetId.',
   ]
     .filter(Boolean)
     .join('\n\n');
