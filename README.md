@@ -83,20 +83,23 @@ Tests are written **alongside each feature, phase by phase** — never deferred 
 npm test                        # runs every workspace's tests
 ```
 
-Current coverage (14 tests):
+Current coverage (29 tests):
 
 | Area | What's covered |
 |---|---|
 | `shared` — game rules | phase-transition guards, win-condition evaluation |
 | `shared` — role logic | balanced role deck, `<4` guard, deterministic seeded shuffle |
-| `server` — room registry | join/leave, chat recording, rejecting unknown players, broadcast to open-only sockets, empty-room cleanup |
+| `shared` — engine | reducer, `viewFor` role-hiding + seer notes, pre-game identity |
+| `shared` — flow | full deterministic games (village & werewolf wins), doctor save, role validation, **log replay ⇒ identical state** |
+| `server` — engine | command routing, role dealing, chat recording, invalid-command errors |
+| `server` — connections | attach/detach, socket lookup, empty-game cleanup |
 
 Pure game rules live in `shared` with **no I/O**, so they're tested in isolation without a server or database. As P1+ add the event store and state machine, their tests land in the same commit as the code.
 
 ## Roadmap
 
-- [x] **P0** — Monorepo, shared types, WS gateway + lobby/chat, DB schema + migration, CI, unit tests (14)
-- [ ] **P1** — Event store + state machine; full human game loop (night → vote → resolve → win)
+- [x] **P0** — Monorepo, shared types, WS gateway + lobby/chat, DB schema + migration, CI, unit tests
+- [x] **P1** — Event-sourced engine + state machine; full human game loop (start → night → vote → resolve → win) playable in the UI
 - [ ] **P2** — Gemini agents take turns with persistent memory + reasoning stream
 - [ ] **P3** — Full multi-agent games, reasoning inspector UI, seer/doctor abilities
 - [ ] **P4** — Reconnect/resync hardening, replay/debug view, integration tests, deploy
