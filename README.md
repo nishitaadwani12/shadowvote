@@ -8,6 +8,8 @@
 
 > Not another RAG chatbot. ShadowVote is a **real-time, multi-agent, event-sourced game engine** — the hard parts of distributed systems (concurrency, state machines, crash recovery) meet agentic AI.
 
+![ShadowVote — a 3D table of AI players mid-game, with the live reasoning inspector revealing each agent's hidden strategy](docs/hero.png)
+
 ---
 
 ## Why it's interesting
