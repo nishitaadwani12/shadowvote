@@ -10,7 +10,27 @@ const NIGHT_ACTION: Partial<Record<Role, NightAction>> = {
 
 const ACTION_VERB: Record<NightAction, string> = { KILL: 'kill', PROTECT: 'protect', INSPECT: 'inspect' };
 
+const ROLE_OBJECTIVE: Record<Role, string> = {
+  WEREWOLF: 'Cull a villager each night; blend in and dodge the day vote.',
+  SEER: 'Inspect one player each night; steer the village to the wolves.',
+  DOCTOR: 'Protect one player from the wolves each night.',
+  VILLAGER: 'Reason and rally votes to eliminate the werewolves.',
+};
+
 const PERSONAS = ['a cautious analyst', 'an aggressive accuser', 'a quiet observer', 'a smooth-talking bluffer'];
+
+interface ReasoningEntry {
+  name: string;
+  reasoning: string;
+  round: number;
+}
+
+/** Group reasoning entries by round, newest round first. */
+function groupByRound(entries: ReasoningEntry[]): [number, ReasoningEntry[]][] {
+  const byRound = new Map<number, ReasoningEntry[]>();
+  for (const e of entries) byRound.set(e.round, [...(byRound.get(e.round) ?? []), e]);
+  return [...byRound.entries()].sort((a, b) => b[0] - a[0]);
+}
 
 export function App() {
   const { status, state, chat, reasoning, playerId, error, join, sendChat, start, addAi, vote, nightAction } =
@@ -38,11 +58,18 @@ export function App() {
   }
 
   const targetable = Boolean(canActAtNight || canVote);
-  const actionHint = canActAtNight
-    ? `Night — click a player to ${ACTION_VERB[myNightAction!]}`
-    : canVote
-      ? 'Day — click a player to vote them out'
-      : null;
+  const dead = Boolean(you && !you.alive);
+  const actionHint = dead
+    ? "You've been eliminated — you can watch but not act."
+    : canActAtNight
+      ? `Night — click a player to ${ACTION_VERB[myNightAction!]}`
+      : canVote
+        ? 'Day — click a player to vote them out'
+        : phase === 'NIGHT'
+          ? 'Night falls. The special roles are acting…'
+          : phase === 'DAY_DISCUSSION' || phase === 'DAY_VOTE'
+            ? 'Discussion underway…'
+            : null;
 
   return (
     <div className="app">
@@ -75,6 +102,8 @@ export function App() {
               {state && state.round > 0 && <span className="muted">round {state.round}</span>}
               {you?.role && <span className="role">you are {you.role}</span>}
             </div>
+
+            {you?.role && <p className="objective">{ROLE_OBJECTIVE[you.role]}</p>}
 
             {state?.winner ? (
               <div className="winner">🏆 {state.winner} wins</div>
@@ -144,10 +173,15 @@ export function App() {
             {reasoning.length === 0 ? (
               <p className="muted">Add AI players and start — each agent's hidden reasoning streams here as it acts.</p>
             ) : (
-              reasoning.map((r, i) => (
-                <p key={i}>
-                  <strong>{r.name}</strong> <span className="muted">r{r.round}</span>: {r.reasoning}
-                </p>
+              groupByRound(reasoning).map(([round, entries]) => (
+                <div className="round-group" key={round}>
+                  <h4>Round {round}</h4>
+                  {entries.map((r, i) => (
+                    <p key={i}>
+                      <strong>{r.name}</strong>: {r.reasoning}
+                    </p>
+                  ))}
+                </div>
               ))
             )}
           </aside>

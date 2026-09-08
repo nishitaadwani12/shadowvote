@@ -171,6 +171,27 @@ li.dead {
   margin: 0 0 0.75rem;
 }
 
+.objective {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.round-group {
+  margin-bottom: 0.75rem;
+}
+.round-group h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.round-group p {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+
 .lobby-actions {
   display: flex;
   gap: 0.5rem;
