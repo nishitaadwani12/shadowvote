@@ -83,7 +83,7 @@ Tests are written **alongside each feature, phase by phase** — never deferred 
 npm test                        # runs every workspace's tests
 ```
 
-Current coverage (37 tests):
+Current coverage (43 tests):
 
 | Area | What's covered |
 |---|---|
@@ -96,6 +96,9 @@ Current coverage (37 tests):
 | `server` — orchestrator | **all-AI game plays itself to a winner**, lobby/game-over no-ops, reasoning + memory recorded |
 | `server` — heuristic agent | targets first candidate, speaks only in discussion, abstains with no targets, never targets an ally |
 | `shared` — werewolf allies | `viewFor` reveals the pack to werewolves, hides it from villagers |
+| `server` — event store | append/order events, isolated snapshots |
+| `server` — crash recovery | a restarted engine `hydrate`s to identical state from the log |
+| `server` — integration (real WS) | **full human + AI game to a winner**, reconnect via REJOIN, unknown-seat rejection |
 
 Pure game rules live in `shared` with **no I/O**, so they're tested in isolation without a server or database. As P1+ add the event store and state machine, their tests land in the same commit as the code.
 
@@ -105,7 +108,24 @@ Pure game rules live in `shared` with **no I/O**, so they're tested in isolation
 - [x] **P1** — Event-sourced engine + state machine; full human game loop (start → night → vote → resolve → win) playable in the UI
 - [x] **P2** — AI players (Gemini, with heuristic fallback) take turns off the request path with persistent memory; reasoning streamed to the inspector; add AI players from the lobby
 - [x] **P3** — Faction-aware agents (werewolf pack coordination) + role-strategy prompting; role objectives, night/spectator status, and a round-grouped reasoning inspector in the UI
-- [ ] **P4** — Reconnect/resync hardening, replay/debug view, integration tests, deploy
+- [x] **P4** — Durable Postgres event store + crash-recovery hydration; reconnect/resync (REJOIN + client auto-reconnect); integration tests over a real WebSocket; Docker + Fly.io deploy config
+
+## Deploy (all free tiers)
+
+**Database** — create a free Postgres on [Neon](https://neon.tech), then apply the schema:
+```bash
+DATABASE_URL="postgres://…" npm run db:migrate
+```
+
+**Server** — [Fly.io](https://fly.io) (config in `fly.toml`, Dockerfile in `packages/server/`):
+```bash
+fly launch --no-deploy          # once
+fly secrets set DATABASE_URL="postgres://…" GEMINI_API_KEY="…"
+fly deploy
+```
+Without `DATABASE_URL` the server runs with an in-memory store; without `GEMINI_API_KEY` AI players use the heuristic agent — so it runs anywhere with zero config.
+
+**Web** — [Vercel](https://vercel.com): set the project root to `packages/web` and the env var `VITE_WS_URL` to your server's `wss://…/ws`.
 
 ## License
 
