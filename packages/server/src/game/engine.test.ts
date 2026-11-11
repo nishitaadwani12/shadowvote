@@ -15,6 +15,16 @@ test('joining creates players and a per-game event log', () => {
   assert.equal(engine.view('g', p1!)?.players.length, 2);
 });
 
+test('addAi never seats a duplicate name (rapid clicks or a clash with the human)', () => {
+  const engine = new GameEngine();
+  engine.join('g', 'Meera');
+  engine.addAi('g', 'meera');
+  engine.addAi('g', 'Kabir');
+  engine.addAi('g', 'Kabir');
+  const names = engine.state('g')!.players.map((p) => p.name.toLowerCase());
+  assert.equal(new Set(names).size, names.length, `names are unique: ${names.join(', ')}`);
+});
+
 test('START deals roles and opens the first night', () => {
   const engine = new GameEngine();
   const [p1] = seat(engine, 'g', ['A', 'B', 'C', 'D']);

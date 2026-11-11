@@ -18,7 +18,7 @@ const pick = <T>(arr: readonly T[]): T | undefined => arr[Math.floor(Math.random
 export class HeuristicAgent implements Agent {
   async decide(ctx: AgentContext): Promise<AgentDecision> {
     const pool = ctx.candidates.filter((c) => !ctx.allies.some((a) => a.id === c.id));
-    const target = pick(pool) ?? ctx.candidates[0] ?? null;
+    const target = ctx.packPick ?? pick(pool) ?? ctx.candidates[0] ?? null;
     const targetName = target?.name ?? 'no one';
     const reasoning = `As the ${ctx.role} in round ${ctx.round}, my read points at ${targetName}.`;
     const speech = ctx.phase === 'DAY_DISCUSSION' && target ? (pick(SUSPICIONS) ?? (() => ''))(targetName) : '';

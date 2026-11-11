@@ -31,16 +31,17 @@ export const ROLE_FACTION: Record<Role, Faction> = {
  * LOBBY          → players join, host starts
  * NIGHT          → werewolves choose a kill; seer inspects; doctor protects
  * DAY_DISCUSSION → open chat; agents reason and posture
- * DAY_VOTE       → each living player votes to eliminate one
- * RESOLVE        → apply votes/night actions, check win condition
+ * DAY_VOTE       → each living player votes to eliminate one (or abstains)
  * GAME_OVER      → terminal
+ *
+ * Night and vote results are resolved inline as the last action lands, so
+ * there is no separate "resolve" phase; see TRANSITIONS in game.ts.
  */
 export const PHASES = [
   'LOBBY',
   'NIGHT',
   'DAY_DISCUSSION',
   'DAY_VOTE',
-  'RESOLVE',
   'GAME_OVER',
 ] as const;
 export type Phase = (typeof PHASES)[number];
@@ -95,7 +96,8 @@ export type GameEvent =
   | { type: 'PHASE_CHANGED'; phase: Phase; round: number }
   | { type: 'CHAT'; playerId: string; text: string; round: number }
   | { type: 'NIGHT_ACTION'; playerId: string; action: NightAction; targetId: string }
-  | { type: 'VOTE_CAST'; voterId: string; targetId: string; round: number }
+  /** targetId null = an explicit abstain (counts as having voted, eliminates no one). */
+  | { type: 'VOTE_CAST'; voterId: string; targetId: string | null; round: number }
   | { type: 'PLAYER_ELIMINATED'; playerId: string; cause: 'VOTE' | 'WEREWOLF'; round: number }
   | { type: 'GAME_OVER'; winner: Faction };
 
@@ -112,7 +114,7 @@ export type ClientMessage =
   | { t: 'START'; gameId: string }
   | { t: 'CHAT'; gameId: string; text: string }
   | { t: 'NIGHT_ACTION'; gameId: string; action: NightAction; targetId: string }
-  | { t: 'VOTE'; gameId: string; targetId: string }
+  | { t: 'VOTE'; gameId: string; targetId: string | null }
   | { t: 'RESYNC'; gameId: string };
 
 export type ServerMessage =

@@ -8,10 +8,11 @@ import { ROLE_FACTION } from './types';
  */
 const TRANSITIONS: Record<Phase, Phase[]> = {
   LOBBY: ['NIGHT'],
-  NIGHT: ['DAY_DISCUSSION'],
+  // A night kill can end the game (wolves reach parity).
+  NIGHT: ['DAY_DISCUSSION', 'GAME_OVER'],
   DAY_DISCUSSION: ['DAY_VOTE'],
-  DAY_VOTE: ['RESOLVE'],
-  RESOLVE: ['NIGHT', 'GAME_OVER'],
+  // Resolving the vote either ends the game or starts the next night.
+  DAY_VOTE: ['NIGHT', 'GAME_OVER'],
   GAME_OVER: [],
 };
 

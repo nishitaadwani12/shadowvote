@@ -49,8 +49,10 @@ export function submitNightAction(
   if (actor.role !== NIGHT_ROLE[action]) throw new Error(`A ${actor.role} cannot perform ${action}.`);
   if (state.night.actorsActed.includes(playerId)) throw new Error('You have already acted this night.');
 
+  if (targetId === playerId) throw new Error('You cannot target yourself at night.');
   const target = state.players.find((p) => p.id === targetId);
   if (!target || !target.alive) throw new Error('Invalid target.');
+  if (action === 'KILL' && target.role === 'WEREWOLF') throw new Error('Werewolves cannot kill their own pack.');
 
   const events: GameEvent[] = [{ type: 'NIGHT_ACTION', playerId, action, targetId }];
   const interim = applyEvents(state, events);
@@ -58,7 +60,8 @@ export function submitNightAction(
   return events;
 }
 
-export function submitVote(state: GameState, voterId: string, targetId: string): GameEvent[] {
+/** Cast a ballot. Pass `null` as targetId to abstain. */
+export function submitVote(state: GameState, voterId: string, targetId: string | null): GameEvent[] {
   if (!state.started) throw new Error('Game has not started.');
 
   const events: GameEvent[] = [];
@@ -74,8 +77,10 @@ export function submitVote(state: GameState, voterId: string, targetId: string):
 
   const voter = current.players.find((p) => p.id === voterId);
   if (!voter || !voter.alive) throw new Error('Only living players may vote.');
-  const target = current.players.find((p) => p.id === targetId);
-  if (!target || !target.alive) throw new Error('Invalid vote target.');
+  if (targetId !== null) {
+    const target = current.players.find((p) => p.id === targetId);
+    if (!target || !target.alive) throw new Error('Invalid vote target.');
+  }
 
   const ballot: GameEvent = { type: 'VOTE_CAST', voterId, targetId, round: current.round };
   events.push(ballot);
@@ -111,22 +116,20 @@ function resolveNight(s: GameState): GameEvent[] {
 
 function resolveDay(s: GameState): GameEvent[] {
   const counts = new Map<string, number>();
-  for (const targetId of Object.values(s.votes)) counts.set(targetId, (counts.get(targetId) ?? 0) + 1);
-
-  // Highest tally wins; ties break toward earliest join order (deterministic).
-  let top: string | null = null;
-  let best = 0;
-  for (const p of s.players) {
-    const c = counts.get(p.id) ?? 0;
-    if (c > best) {
-      best = c;
-      top = p.id;
-    }
+  for (const targetId of Object.values(s.votes)) {
+    if (targetId !== null) counts.set(targetId, (counts.get(targetId) ?? 0) + 1);
   }
+
+  // A single highest tally is eliminated. A tie (or everyone abstaining) means
+  // no one is lynched — previously ties fell to the earliest joiner, which was
+  // almost always the human host.
+  const best = Math.max(0, ...counts.values());
+  const leaders = [...counts.entries()].filter(([, c]) => c === best).map(([id]) => id);
+  const top = best > 0 && leaders.length === 1 ? leaders[0]! : null;
 
   const events: GameEvent[] = [];
   let living = livingPlayers(s);
-  if (top && best > 0) {
+  if (top) {
     events.push({ type: 'PLAYER_ELIMINATED', playerId: top, cause: 'VOTE', round: s.round });
     living = living.filter((p) => p.id !== top);
   }
