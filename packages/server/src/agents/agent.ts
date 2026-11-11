@@ -52,7 +52,7 @@ export interface Agent {
 export class GeminiAgent implements Agent {
   private readonly model;
 
-  constructor(modelName = 'gemini-2.0-flash') {
+  constructor(modelName = env.GEMINI_MODEL) {
     if (!env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY is not set — required for AI players.');
     }

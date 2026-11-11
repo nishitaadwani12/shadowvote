@@ -8,6 +8,8 @@ const schema = z.object({
   DATABASE_URL: z.string().optional(),
   /** Optional until P2 — required once AI agents take turns. */
   GEMINI_API_KEY: z.string().optional(),
+  /** Gemini model for AI players. Override when Google retires a model. */
+  GEMINI_MODEL: z.string().default('gemini-flash-lite-latest'),
 });
 
 export const env = schema.parse(process.env);
