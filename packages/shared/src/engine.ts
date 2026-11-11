@@ -1,5 +1,5 @@
 import type { ChatLine, Faction, GameEvent, GameStateView, Phase, Role } from './types';
-import { factionOf } from './game';
+import { assertTransition, factionOf } from './game';
 
 /**
  * The authoritative, in-memory game state. It is never mutated directly — it
@@ -17,7 +17,10 @@ export interface EnginePlayer {
 }
 
 interface NightState {
+  /** The pack's agreed kill: the most-picked target, ties going to the earliest pick. */
   killTarget: string | null;
+  /** Every wolf's pick in submission order — the pack decides together, not last-writer-wins. */
+  wolfPicks: { wolfId: string; targetId: string }[];
   protectTarget: string | null;
   /** Ids of role-holders who have submitted their night action this round. */
   actorsActed: string[];
@@ -39,13 +42,24 @@ export interface GameState {
   players: EnginePlayer[];
   transcript: ChatLine[];
   night: NightState;
-  /** Current-round ballots: voterId -> targetId. */
-  votes: Record<string, string>;
+  /** Current-round ballots: voterId -> targetId (null = abstained). */
+  votes: Record<string, string | null>;
   inspections: Inspection[];
   winner: Faction | null;
 }
 
-const emptyNight = (): NightState => ({ killTarget: null, protectTarget: null, actorsActed: [] });
+const emptyNight = (): NightState => ({ killTarget: null, wolfPicks: [], protectTarget: null, actorsActed: [] });
+
+/** Plurality of the pack's picks; on a tie, the target picked first wins (deterministic). */
+export function packKillTarget(picks: NightState['wolfPicks']): string | null {
+  const counts = new Map<string, number>();
+  for (const { targetId } of picks) counts.set(targetId, (counts.get(targetId) ?? 0) + 1);
+  let best: string | null = null;
+  for (const { targetId } of picks) {
+    if (best === null || counts.get(targetId)! > counts.get(best)!) best = targetId;
+  }
+  return best;
+}
 
 export function initialState(gameId: string, seed: string): GameState {
   return {
@@ -86,6 +100,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       };
 
     case 'PHASE_CHANGED': {
+      assertTransition(state.phase, event.phase);
       const next: GameState = { ...state, phase: event.phase, round: event.round };
       if (event.phase === 'NIGHT') {
         next.night = emptyNight();
@@ -110,7 +125,10 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     case 'NIGHT_ACTION': {
       const night: NightState = { ...state.night, actorsActed: [...state.night.actorsActed, event.playerId] };
       const inspections = [...state.inspections];
-      if (event.action === 'KILL') night.killTarget = event.targetId;
+      if (event.action === 'KILL') {
+        night.wolfPicks = [...state.night.wolfPicks, { wolfId: event.playerId, targetId: event.targetId }];
+        night.killTarget = packKillTarget(night.wolfPicks);
+      }
       else if (event.action === 'PROTECT') night.protectTarget = event.targetId;
       else if (event.action === 'INSPECT') {
         const target = state.players.find((p) => p.id === event.targetId);
@@ -131,6 +149,7 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
       };
 
     case 'GAME_OVER':
+      assertTransition(state.phase, 'GAME_OVER');
       return { ...state, winner: event.winner, phase: 'GAME_OVER' };
 
     default:
@@ -176,6 +195,10 @@ export function viewFor(state: GameState, playerId: string): GameStateView {
     // Werewolves know their pack — surface allies so they can coordinate.
     const pack = state.players.filter((p) => p.role === 'WEREWOLF' && p.id !== playerId).map((p) => p.name);
     notes.push(pack.length ? `Your werewolf allies: ${pack.join(', ')}.` : 'You are the lone werewolf.');
+    if (state.phase === 'NIGHT' && state.night.killTarget) {
+      const prey = state.players.find((p) => p.id === state.night.killTarget);
+      notes.push(`Your pack's kill tonight so far: ${prey?.name ?? 'unknown'}.`);
+    }
   }
   return {
     gameId: state.gameId,

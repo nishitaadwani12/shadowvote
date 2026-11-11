@@ -49,7 +49,7 @@ export function App() {
     : canActAtNight
       ? `Night — tap a player to ${ACTION_VERB[myNightAction!]}`
       : canVote
-        ? 'Day — tap a player to vote them out'
+        ? 'Day — talk it out, then tap a player to vote (or skip)'
         : phase === 'NIGHT'
           ? 'Night falls. The special roles are acting…'
           : phase === 'DAY_DISCUSSION' || phase === 'DAY_VOTE'
@@ -70,6 +70,7 @@ export function App() {
         you={you}
         phase={phase}
         actionHint={actionHint}
+        onSkipVote={canVote ? () => sock.vote(null) : null}
         objective={you?.role ? ROLE_OBJECTIVE[you.role] : null}
         personas={PERSONAS}
         room={room}

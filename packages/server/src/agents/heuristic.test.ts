@@ -4,6 +4,7 @@ import { HeuristicAgent } from './heuristic';
 import type { AgentContext } from './agent';
 
 const ctx = (over: Partial<AgentContext>): AgentContext => ({
+  self: { id: 'me', name: 'Me' },
   role: 'VILLAGER',
   persona: 'x',
   round: 1,

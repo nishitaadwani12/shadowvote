@@ -65,6 +65,61 @@ test('a full game runs to a winner over WebSocket (human + AI)', async () => {
   }
 });
 
+test('hidden AI reasoning never reaches a living player mid-game, and unlocks at the end', async () => {
+  const { app, url } = await startServer();
+  const gameId = 'reasoning-gate';
+  const ws = new WebSocket(url);
+  await once(ws, 'open');
+
+  let lastState: { phase: string; you: { alive: boolean } | null } | null = null;
+  const leaks: string[] = [];
+  let received = 0;
+  const done = new Set<string>();
+  const finished = new Promise<void>((resolve) => {
+    ws.on('message', (raw) => {
+      const m = JSON.parse(raw.toString());
+      if (m.t === 'AGENT_REASONING') {
+        received++;
+        if (lastState?.you?.alive && lastState.phase !== 'GAME_OVER') leaks.push(m.reasoning);
+        return;
+      }
+      if (m.t !== 'STATE') return;
+      const s = m.state;
+      lastState = s;
+      if (s.winner) return setTimeout(resolve, 100); // let the end-of-game backlog arrive
+      const you = s.you;
+      if (!you || !you.alive) return;
+      const other = s.players.find((p: { id: string; alive: boolean }) => p.alive && p.id !== you.id)?.id;
+      if (!other) return;
+      if (s.phase === 'NIGHT' && ROLE_ACTION[you.role as Role] && !done.has(`n${s.round}`)) {
+        done.add(`n${s.round}`);
+        ws.send(JSON.stringify({ t: 'NIGHT_ACTION', gameId, action: ROLE_ACTION[you.role as Role], targetId: other }));
+      } else if ((s.phase === 'DAY_DISCUSSION' || s.phase === 'DAY_VOTE') && !done.has(`v${s.round}`)) {
+        done.add(`v${s.round}`);
+        ws.send(JSON.stringify({ t: 'VOTE', gameId, targetId: other }));
+      }
+    });
+  });
+
+  ws.send(JSON.stringify({ t: 'JOIN', gameId, name: 'Human' }));
+  for (const name of ['Aarav', 'Meera', 'Kabir']) ws.send(JSON.stringify({ t: 'ADD_AI', gameId, name }));
+  ws.send(JSON.stringify({ t: 'START', gameId }));
+
+  let timer: NodeJS.Timeout;
+  const guard = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('game did not finish in time')), 20_000);
+  });
+  try {
+    await Promise.race([finished, guard]);
+    assert.deepEqual(leaks, [], 'no reasoning was sent while the human was alive and the game live');
+    assert.ok(received > 0, 'the reasoning backlog is delivered once the human is out or the game ends');
+  } finally {
+    clearTimeout(timer!);
+    ws.close();
+    await app.close();
+  }
+});
+
 test('a player can reconnect to their seat via REJOIN', async () => {
   const { app, url } = await startServer();
   const gameId = 'reconnect';

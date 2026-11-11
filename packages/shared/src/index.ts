@@ -3,3 +3,4 @@ export * from './roles';
 export * from './game';
 export * from './engine';
 export * from './flow';
+export * from './names';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { GameStateView } from '@shadowvote/shared';
+import { pickAiName, type GameStateView } from '@shadowvote/shared';
 import type { GameSocket, ReasoningEntry } from '../lib/ws';
 
 interface Props {
@@ -8,6 +8,8 @@ interface Props {
   you: GameStateView['you'];
   phase: string;
   actionHint: string | null;
+  /** Present while the player may vote; casts an abstain. */
+  onSkipVote: (() => void) | null;
   objective: string | null;
   personas: string[];
   room: string;
@@ -20,7 +22,6 @@ const PHASE_LABEL: Record<string, string> = {
   NIGHT: '🌙 Night',
   DAY_DISCUSSION: '☀️ Day · Discussion',
   DAY_VOTE: '🗳️ Day · Vote',
-  RESOLVE: 'Resolving',
   GAME_OVER: 'Game Over',
 };
 
@@ -30,7 +31,7 @@ function groupByRound(entries: ReasoningEntry[]): [number, ReasoningEntry[]][] {
   return [...byRound.entries()].sort((a, b) => b[0] - a[0]);
 }
 
-export function Hud({ sock, you, phase, actionHint, objective, personas, room, setRoom, onPlayAgain }: Props) {
+export function Hud({ sock, you, phase, actionHint, onSkipVote, objective, personas, room, setRoom, onPlayAgain }: Props) {
   const { status, state, chat, reasoning, error, playerId, join, addAi, start, sendChat } = sock;
   const [name, setName] = useState('');
   const [draft, setDraft] = useState('');
@@ -38,8 +39,9 @@ export function Hud({ sock, you, phase, actionHint, objective, personas, room, s
   const playerCount = state?.players.length ?? 0;
 
   function addAiPlayer() {
-    const n = (state?.players.filter((p) => p.isAi).length ?? 0) + 1;
-    addAi(`AI-${n}`, personas[Math.floor(Math.random() * personas.length)]!);
+    // Natural names (not "AI-1") so the agents can't tell which seat is the human.
+    const taken = state?.players.map((p) => p.name) ?? [];
+    addAi(pickAiName(taken), personas[Math.floor(Math.random() * personas.length)]!);
   }
 
   return (
@@ -129,8 +131,13 @@ export function Hud({ sock, you, phase, actionHint, objective, personas, room, s
                   </button>
                 </motion.div>
               ) : actionHint ? (
-                <motion.div key={actionHint} className="action-hint" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                  {actionHint}
+                <motion.div key={actionHint} className="controls" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <div className="action-hint">{actionHint}</div>
+                  {onSkipVote && (
+                    <button className="secondary" onClick={onSkipVote}>
+                      Skip vote
+                    </button>
+                  )}
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -172,7 +179,11 @@ export function Hud({ sock, you, phase, actionHint, objective, personas, room, s
             <h3>🧠 AI reasoning</h3>
             <div className="reasoning-scroll">
               {reasoning.length === 0 ? (
-                <p className="muted">Each agent's hidden reasoning streams here as it acts.</p>
+                <p className="muted">
+                  {you?.alive && phase !== 'GAME_OVER'
+                    ? "The agents' hidden reasoning unlocks here once you're eliminated or the game ends."
+                    : "Each agent's hidden reasoning streams here as it acts."}
+                </p>
               ) : (
                 groupByRound(reasoning).map(([round, entries]) => (
                   <div className="round-group" key={round}>

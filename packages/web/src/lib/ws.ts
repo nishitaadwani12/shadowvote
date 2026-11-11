@@ -107,7 +107,11 @@ export function useGameSocket() {
     (name: string, persona: string) => withGame((gameId) => ({ t: 'ADD_AI', gameId, name, persona })),
     [withGame],
   );
-  const vote = useCallback((targetId: string) => withGame((gameId) => ({ t: 'VOTE', gameId, targetId })), [withGame]);
+  /** Vote to eliminate a player, or pass null to skip (abstain). */
+  const vote = useCallback(
+    (targetId: string | null) => withGame((gameId) => ({ t: 'VOTE', gameId, targetId })),
+    [withGame],
+  );
   const nightAction = useCallback(
     (action: NightAction, targetId: string) => withGame((gameId) => ({ t: 'NIGHT_ACTION', gameId, action, targetId })),
     [withGame],

@@ -39,22 +39,45 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
   const send = (socket: WebSocket, message: ServerMessage): void => {
     socket.send(JSON.stringify(message));
   };
-  const broadcast = (gameId: string, message: ServerMessage): void => {
-    connections.each(gameId, (conn) => send(conn.socket, message));
+  // Hidden AI reasoning reveals roles ("As a werewolf…"), so it is only sent to
+  // players who can no longer influence the game: the eliminated, spectators,
+  // and everyone once the game is over. Each socket gets the backlog it missed.
+  const reasoningLog = new Map<string, Extract<ServerMessage, { t: 'AGENT_REASONING' }>[]>();
+  const reasoningSent = new WeakMap<WebSocket, number>();
+  const maySeeReasoning = (gameId: string, playerId: string): boolean => {
+    const state = engine.state(gameId);
+    if (!state) return false;
+    if (state.phase === 'GAME_OVER') return true;
+    const player = state.players.find((p) => p.id === playerId);
+    return !player || !player.alive;
   };
+  const flushReasoning = (gameId: string): void => {
+    const log = reasoningLog.get(gameId) ?? [];
+    connections.each(gameId, (conn) => {
+      if (!maySeeReasoning(gameId, conn.playerId)) return;
+      for (let i = reasoningSent.get(conn.socket) ?? 0; i < log.length; i++) send(conn.socket, log[i]!);
+      reasoningSent.set(conn.socket, log.length);
+    });
+  };
+
   const broadcastState = (gameId: string): void => {
     connections.each(gameId, (conn) => {
       const view = engine.view(gameId, conn.playerId);
       if (view) send(conn.socket, { t: 'STATE', state: view });
     });
+    flushReasoning(gameId); // a death or game over may have just unlocked it
   };
 
   const orchestrator = new AgentOrchestrator(
     engine,
     agent,
     {
-      onReasoning: (gameId, playerId, name, reasoning, round) =>
-        broadcast(gameId, { t: 'AGENT_REASONING', playerId, name, reasoning, round }),
+      onReasoning: (gameId, playerId, name, reasoning, round) => {
+        const log = reasoningLog.get(gameId) ?? [];
+        log.push({ t: 'AGENT_REASONING', playerId, name, reasoning, round });
+        reasoningLog.set(gameId, log);
+        flushReasoning(gameId);
+      },
       onProgress: (gameId) => broadcastState(gameId),
     },
     new InMemoryAgentMemory(),
@@ -92,6 +115,7 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
         send(socket, { t: 'JOINED', playerId: msg.playerId, gameId: msg.gameId });
         const view = engine.view(msg.gameId, msg.playerId);
         if (view) send(socket, { t: 'STATE', state: view });
+        flushReasoning(msg.gameId);
         return;
       }
       case 'ADD_AI': {

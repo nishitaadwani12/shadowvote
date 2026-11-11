@@ -3,6 +3,7 @@ import {
   applyEvents,
   foldEvents,
   initialState,
+  pickAiName,
   startGame,
   submitChat,
   submitNightAction,
@@ -75,8 +76,11 @@ export class GameEngine {
   addAi(gameId: string, name: string, persona?: string): string {
     const game = this.ensure(gameId);
     if (game.state.started) throw new Error('Cannot add players after the game has started.');
+    // Rapid "Add AI" clicks can send a name the client thought was free; never seat duplicates.
+    const taken = game.state.players.map((p) => p.name);
+    const unique = taken.some((t) => t.trim().toLowerCase() === name.trim().toLowerCase()) ? pickAiName(taken) : name;
     const playerId = randomUUID();
-    this.record(game, [{ type: 'PLAYER_JOINED', playerId, name, isAi: true, persona }]);
+    this.record(game, [{ type: 'PLAYER_JOINED', playerId, name: unique, isAi: true, persona }]);
     return playerId;
   }
 
